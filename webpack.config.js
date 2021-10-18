@@ -2,9 +2,10 @@
  * @Author: Obital 
  * @Date: 2021-08-19 18:06:07 
  * @Last Modified by: Obital
- * @Last Modified time: 2021-08-19 18:20:30
+ * @Last Modified time: 2021-10-18 16:16:50
  */
 
+let webpack = require("webpack");
 let path = require("path");
 let HtmlWebpackPlugin = require("html-webpack-plugin");
 let MiniCssExtractPlugin = require("mini-css-extract-plugin");
@@ -16,6 +17,7 @@ let OptimizeCssAssetsWebpackPlugin = require("optimize-css-assets-webpack-plugin
  */
 
 let DIST_PATH = path.resolve(__dirname, "dist");
+let env = process.env.NODE_ENV;
 
 let commonCssLoaders = [
   {
@@ -40,8 +42,9 @@ module.exports = {
   entry: "./src/main.js",
 
   output: {
-    filename: "[name].[contenthash:10].js",
-    path: DIST_PATH
+    filename: env == "production" ? "[name].[contenthash:10].js" : "[name].[hash:10].js",
+    path: DIST_PATH,
+    publicPath: "/"
   },
 
   module: {
@@ -60,7 +63,7 @@ module.exports = {
             ]
           },
           {
-            test: /\.js$/,
+            test: /\.jsx?$/,
             exclude: /node_modules/,
             loader: "babel-loader",
             options: {
@@ -102,7 +105,7 @@ module.exports = {
             loader: "html-loader"
           },
           {
-            exclude: /\.(html|css|less|js|png|jpg|jpeg|png)$/,
+            exclude: /\.(html|css|less|js|png|jpg|jpeg|png|json)$/,
             loader: "file-loader",
             options: {
               outputPath: "./assets",
@@ -127,26 +130,37 @@ module.exports = {
       filename: "./css/app.[contenthash:10].css"
     }),
 
-    new OptimizeCssAssetsWebpackPlugin()
+    new OptimizeCssAssetsWebpackPlugin(),
+
+    new webpack.HotModuleReplacementPlugin()
   ],
 
   /**
    * 1. 可将node_modules中的代码打包成一个chunk输出 
    */
   optimization: {
+    minimize: false,
     splitChunks: {
       chunks: "all"
     }
   },
 
-  mode: "development",
+  resolve: {
+    extensions: [".js", ".json"],
+    alias: {
+      "@": path.resolve("src")
+    }
+  },
 
   devServer: {
     contentBase: DIST_PATH,
     port: 4443,
     open: true,
-    compress: true
+    compress: true,
+    hot: true,
+    historyApiFallback: true
   },
 
+  mode: env == "production" ? "production" : "development",
   devtool: "eval-cheap-module-source-map"
 }
